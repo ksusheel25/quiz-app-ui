@@ -2,4 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global resets or overrides can go here if needed, without using @apply to Tailwind utilities. */
+/* Input styling */
+@layer components {
+  .input {
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-600 transition-colors bg-gray-50;
+  }
+
+  .input::placeholder {
+    @apply text-gray-400;
+  }
+
+  .btn-primary {
+    @apply bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg;
+  }
+
+  .error {
+    @apply text-red-500 text-sm mt-1;
+  }
+}

@@ -1,68 +1,134 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import axiosClient from "../api/axiosClient";
-import AuthLayout from "../conponents/AuthLayout";
+import { registerUser, type RegisterUserRequest } from "../api/auth.api";
+import Toast from "../conponents/Toast";
+
+interface ToastMessage {
+  id: string;
+  message: string;
+  type: "success" | "error" | "info";
+}
 
 export default function Register() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [toastCounter, setToastCounter] = useState(0);
 
-  const register = async () => {
-    await axiosClient.post("/api/users/register", {
-      name,
-      email,
-      password,
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterUserRequest>({
+    defaultValues: {
       role: "STUDENT",
-    });
+    },
+  });
 
-    navigate("/login");
+  const addToast = (message: string, type: "success" | "error" | "info" = "info") => {
+    const id = `${Date.now()}-${toastCounter}`;
+    setToastCounter(prev => prev + 1);
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const onSubmit = async (data: RegisterUserRequest) => {
+    try {
+      setIsLoading(true);
+      await registerUser(data);
+      addToast(`Account created successfully! Redirecting to login...`, "success");
+      
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || "Registration failed. Please try again.";
+      addToast(errorMsg, "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <AuthLayout>
-      <h2 className="text-3xl font-bold text-center text-gray-800">
-        Create Account
-      </h2>
-
-      <div className="mt-8 space-y-4">
-        <input
-          placeholder="Full Name"
-          className="w-full border px-4 py-3 rounded-lg"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+    <div className="flex items-center justify-center min-h-screen px-4">
+      {toasts.map(toast => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => removeToast(toast.id)}
         />
+      ))}
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl"
+      >
+        <h2 className="text-3xl font-bold text-center text-indigo-600 mb-2">
+          Create Account
+        </h2>
+        <p className="text-center text-gray-600 mb-6">Join Quizify today</p>
 
-        <input
-          placeholder="Email"
-          className="w-full border px-4 py-3 rounded-lg"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        {/* NAME */}
+        <div className="mb-4">
+          <input
+            {...register("name", { required: "Name is required" })}
+            placeholder="Full Name"
+            className="input"
+          />
+          {errors.name && <p className="error">{errors.name.message}</p>}
+        </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full border px-4 py-3 rounded-lg"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        {/* EMAIL */}
+        <div className="mb-4">
+          <input
+            {...register("email", { required: "Email is required" })}
+            placeholder="Email Address"
+            className="input"
+            type="email"
+          />
+          {errors.email && <p className="error">{errors.email.message}</p>}
+        </div>
 
-        <button
-          onClick={register}
-          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700"
-        >
-          Register
+        {/* PASSWORD */}
+        <div className="mb-4">
+          <input
+            type="password"
+            {...register("password", {
+              required: "Password is required",
+              minLength: { value: 6, message: "Min 6 characters" },
+            })}
+            placeholder="Password"
+            className="input"
+          />
+          {errors.password && <p className="error">{errors.password.message}</p>}
+        </div>
+
+        {/* ROLE */}
+        <div className="mb-6">
+          <select
+            {...register("role")}
+            className="input"
+          >
+            <option value="STUDENT">Student</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+
+        <button className="btn-primary w-full py-3" disabled={isLoading}>
+          {isLoading ? "Creating account..." : "Register"}
         </button>
-      </div>
 
-      <p className="text-center text-sm text-gray-500 mt-6">
-        Already have an account?
-        <Link to="/login" className="text-indigo-600 font-semibold ml-1">
-          Login
-        </Link>
-      </p>
-    </AuthLayout>
+        <p className="text-center text-sm text-gray-600 mt-6">
+          Already registered?{" "}
+          <Link to="/login" className="text-indigo-600 font-semibold hover:underline">
+            Login here
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }

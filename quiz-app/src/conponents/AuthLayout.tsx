@@ -1,11 +1,9 @@
-import type { ReactNode } from "react";
+import { Outlet } from "react-router-dom";
 
-export default function AuthLayout({ children }: { children: ReactNode }) {
+export default function AuthLayout() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-700">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8">
-        {children}
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-purple-700">
+      <Outlet />
     </div>
   );
 }
